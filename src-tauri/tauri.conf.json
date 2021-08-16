@@ -4,8 +4,8 @@
     "version": "0.1.0"
   },
   "build": {
-    "distDir": ["../index.html"],
-    "devPath": ["../index.html"],
+    "distDir": ["../src/index.html"],
+    "devPath": ["../src/index.html"],
     "beforeDevCommand": "",
     "beforeBuildCommand": ""
   },
@@ -57,11 +57,11 @@
     "windows": [
       {
         "title": "pomodorino-rs",
-        "url": "index.html",
-        "width": 800,
-        "height": 600,
+        "width": 300,
+        "height": 200,
         "decorations": false,
-        "center": true
+        "center": true,
+        "alwaysOnTop": true
       }
     ],
     "security": {

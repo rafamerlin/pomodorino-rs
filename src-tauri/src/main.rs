@@ -57,7 +57,7 @@ fn main() {
       _ => {}
     })
     .setup(|app| {
-      // app.get_window("main").unwrap().hide().unwrap();
+      app.get_window("main").unwrap().hide().unwrap();
       Ok(())
     })
     .run(tauri::generate_context!())
