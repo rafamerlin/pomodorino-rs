@@ -54,16 +54,6 @@
     "allowlist": {
       "all": true
     },
-    "windows": [
-      {
-        "title": "pomodorino-rs",
-        "width": 300,
-        "height": 200,
-        "decorations": false,
-        "center": true,
-        "alwaysOnTop": true
-      }
-    ],
     "security": {
       "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self' img-src: 'self'"
     }

@@ -6,7 +6,6 @@
 use tauri::api::process::{Command, CommandEvent};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 use tauri::{Manager, Window};
-use crossbeam::channel;
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -52,16 +51,6 @@ fn main() {
             include_bytes!("../icons/tomato.ico").to_vec(),
           ))
           .unwrap();
-
-        app
-          .emit_all(
-            "event-name",
-            Payload {
-              message: "Tauri is awesome!".into(),
-            },
-          )
-          .unwrap();
-        println!("Emited Tauri event");
       }
       // SystemTrayEvent::RightClick {
       //   position: _,
@@ -79,13 +68,13 @@ fn main() {
       // }
       SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
         "p25" => {
-          tx.send(25);
+          tx.send(25).unwrap();
         }
         "p15" => {
-          tx.send(15);
+          tx.send(15).unwrap();
         }
         "p5" => {
-          tx.send(5);
+          tx.send(5).unwrap();
         }
         "quit" => {
           std::process::exit(0);
@@ -99,7 +88,13 @@ fn main() {
       _ => {}
     })
     .setup(move |app| {
-      app.get_window("main").unwrap().hide().unwrap();
+      app
+      .tray_handle()
+      .set_icon(tauri::Icon::Raw(
+        include_bytes!("../icons/icon.ico").to_vec(),
+      ))
+      .unwrap();
+
 
       let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
