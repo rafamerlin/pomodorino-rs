@@ -3,9 +3,11 @@
   windows_subsystem = "windows"
 )]
 
-use tauri::api::process::{Command, CommandEvent};
-use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
-use tauri::{Manager, Window};
+mod icongen;
+
+use tauri::{
+  CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+};
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -19,7 +21,6 @@ trait ToMessage: Send {
 fn main() {
   // here `"quit".to_string()` defines the menu item id, and the second parameter is the menu item label.
   let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-  let hide = CustomMenuItem::new("hide".to_string(), "Hide");
   let p25 = CustomMenuItem::new("p25".to_string(), "25");
   let p15 = CustomMenuItem::new("p15".to_string(), "15");
   let p5 = CustomMenuItem::new("p5".to_string(), "5");
@@ -29,43 +30,14 @@ fn main() {
     .add_item(p5)
     .add_native_item(SystemTrayMenuItem::Separator)
     .add_item(quit)
-    .add_native_item(SystemTrayMenuItem::Separator)
-    .add_item(hide);
+    .add_native_item(SystemTrayMenuItem::Separator);
 
   let system_tray = SystemTray::new().with_menu(tray_menu);
-
   let (tx, rx) = crossbeam::channel::unbounded();
 
   tauri::Builder::default()
     .system_tray(system_tray)
-    .on_system_tray_event(move |app, event| match event {
-      SystemTrayEvent::LeftClick {
-        position: _,
-        size: _,
-        ..
-      } => {
-        println!("system tray received a left click");
-        app
-          .tray_handle()
-          .set_icon(tauri::Icon::Raw(
-            include_bytes!("../icons/tomato.ico").to_vec(),
-          ))
-          .unwrap();
-      }
-      // SystemTrayEvent::RightClick {
-      //   position: _,
-      //   size: _,
-      //   ..
-      // } => {
-      //   println!("system tray received a right click");
-      // }
-      // SystemTrayEvent::DoubleClick {
-      //   position: _,
-      //   size: _,
-      //   ..
-      // } => {
-      //   println!("system tray received a double click");
-      // }
+    .on_system_tray_event(move |_app, event| match event {
       SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
         "p25" => {
           tx.send(25).unwrap();
@@ -79,42 +51,22 @@ fn main() {
         "quit" => {
           std::process::exit(0);
         }
-        "hide" => {
-          let window = app.get_window("main").unwrap();
-          window.hide().unwrap();
-        }
         _ => {}
       },
       _ => {}
     })
     .setup(move |app| {
-      app
-      .tray_handle()
-      .set_icon(tauri::Icon::Raw(
-        include_bytes!("../icons/icon.ico").to_vec(),
-      ))
-      .unwrap();
-
+      let icons = icongen::create_all_icons();
+      let tray_handle = app.tray_handle();
 
       let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
         while let Ok(i) = rx.recv() {
-          println!("got = {}", i);
+          let selected_icon = &icons[i];
+          tray_handle
+            .set_icon(tauri::Icon::Raw(selected_icon.clone()))
+            .unwrap();
         }
-
-        // let (mut rx, _child) = Command::new("node")
-        //   .args(&[script_path])
-        //   .spawn()
-        //   .expect("Failed to spawn node");
-
-        // #[allow(clippy::collapsible_match)]
-        // while let Some(event) = rx.recv().await {
-        //   if let CommandEvent::Stdout(line) = event {
-        //     window
-        //       .emit("message", Some(format!("'{}'", line)))
-        //       .expect("failed to emit event");
-        //   }
-        // }
       });
 
       Ok(())
