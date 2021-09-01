@@ -5,9 +5,11 @@
 
 mod icongen;
 
-use tauri::{
-  CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+use std::{
+  sync::{Arc, Mutex},
+  thread,
 };
+use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -19,6 +21,8 @@ trait ToMessage: Send {
 }
 
 fn main() {
+  let pomodoro_time = Arc::new(Mutex::new(99));
+
   // here `"quit".to_string()` defines the menu item id, and the second parameter is the menu item label.
   let quit = CustomMenuItem::new("quit".to_string(), "Quit");
   let p25 = CustomMenuItem::new("p25".to_string(), "25");
@@ -35,18 +39,39 @@ fn main() {
   let system_tray = SystemTray::new().with_menu(tray_menu);
   let (tx, rx) = crossbeam::channel::unbounded();
 
+  let p_time = pomodoro_time.clone();
+  thread::spawn(move || loop {
+    let (tx_timer, rx_timer) = crossbeam::channel::unbounded();
+    let timer = timer::Timer::new();
+    let _guard = timer.schedule_with_delay(chrono::Duration::milliseconds(1000), move || {
+      let _ignored = tx_timer.send(());
+    });
+    rx_timer.recv().unwrap();
+
+    {
+      let mut p_time = p_time.lock().unwrap();
+      if *p_time > 0 && *p_time != 99 {
+        *p_time -= 1;
+        tx.send(*p_time).unwrap();
+      }
+    }
+  });
+
   tauri::Builder::default()
     .system_tray(system_tray)
     .on_system_tray_event(move |_app, event| match event {
       SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
         "p25" => {
-          tx.send(25).unwrap();
+          let mut p_time = pomodoro_time.lock().unwrap();
+          *p_time = 25;
         }
         "p15" => {
-          tx.send(15).unwrap();
+          let mut p_time = pomodoro_time.lock().unwrap();
+          *p_time = 15;
         }
         "p5" => {
-          tx.send(5).unwrap();
+          let mut p_time = pomodoro_time.lock().unwrap();
+          *p_time = 5;
         }
         "quit" => {
           std::process::exit(0);
@@ -56,16 +81,27 @@ fn main() {
       _ => {}
     })
     .setup(move |app| {
-      let icons = icongen::create_all_icons();
       let tray_handle = app.tray_handle();
+
+      tray_handle
+        .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
+        .unwrap();
+
+      let icons = icongen::create_all_icons();
 
       let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
         while let Ok(i) = rx.recv() {
-          let selected_icon = &icons[i];
-          tray_handle
-            .set_icon(tauri::Icon::Raw(selected_icon.clone()))
-            .unwrap();
+          if i == 99 {
+            tray_handle
+              .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
+              .unwrap();
+          } else {
+            let selected_icon = &icons[i];
+            tray_handle
+              .set_icon(tauri::Icon::Raw(selected_icon.clone()))
+              .unwrap();
+          }
         }
       });
 
