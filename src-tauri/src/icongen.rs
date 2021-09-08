@@ -7,9 +7,7 @@ pub const YOMATO_IMAGE: &[u8] = include_bytes!("../icons/yomato.ico");
 const FONT: &[u8] = include_bytes!("../resources/DejaVuSansMono-Bold.ttf");
 
 pub fn create_all_icons() -> Vec<Vec<u8>> {
-  let mut icons = Vec::new();
-
-  icons.push(YOMATO_IMAGE.to_vec());
+  let mut icons = vec![YOMATO_IMAGE.to_vec()];
   for i in 1..26 {
     icons.push(create_icon(i));
   }

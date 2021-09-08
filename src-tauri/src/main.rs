@@ -6,13 +6,10 @@
 mod icongen;
 mod sound;
 
-use rodio::{self, Source};
-use std::{
-  thread,
-};
-use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
-use crate::sound::Sound;
+use crate::sound::Beep;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -24,8 +21,7 @@ trait ToMessage: Send {
 }
 
 const DEFAULT_VALUE: f32 = 99999.0;
-const TIME_MULTIPLIER: f32 =1.0;
-const BEEP: &[u8] = include_bytes!("../resources/ring.mp3");
+const TIME_MULTIPLIER: f32 = 60.0;
 
 fn main() {
   let system_tray = generate_menu();
@@ -35,8 +31,7 @@ fn main() {
 
   let p_time = pomodoro_time.clone();
   thread::spawn(move || {
-    let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
-    let sound = Sound(Arc::new(BEEP.to_vec()));
+    let beep = Beep::new();
 
     loop {
       let (tx_timer, rx_timer) = crossbeam::channel::unbounded();
@@ -54,9 +49,7 @@ fn main() {
             tx.send(minutes).unwrap();
           }
           if *p_time == 0.0 {
-            stream_handle
-              .play_raw(sound.decoder().convert_samples())
-              .unwrap();
+            beep.play();
           }
           *p_time -= 1.0;
         }
@@ -73,8 +66,8 @@ fn main() {
           *p_time = DEFAULT_VALUE;
           let tray_handle = app.tray_handle();
           tray_handle
-              .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
-              .unwrap();
+            .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
+            .unwrap();
         }
       }
       SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
@@ -99,7 +92,6 @@ fn main() {
     })
     .setup(move |app| {
       let tray_handle = app.tray_handle();
-
       tray_handle
         .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
         .unwrap();
@@ -134,13 +126,12 @@ fn generate_menu() -> SystemTray {
   let p15 = CustomMenuItem::new("p15".to_string(), "15");
   let p5 = CustomMenuItem::new("p5".to_string(), "5");
   let tray_menu = SystemTrayMenu::new()
-      .add_item(p25)
-      .add_item(p15)
-      .add_item(p5)
-      .add_native_item(SystemTrayMenuItem::Separator)
-      .add_item(quit)
-      .add_native_item(SystemTrayMenuItem::Separator);
+    .add_item(p25)
+    .add_item(p15)
+    .add_item(p5)
+    .add_native_item(SystemTrayMenuItem::Separator)
+    .add_item(quit)
+    .add_native_item(SystemTrayMenuItem::Separator);
 
-  let system_tray = SystemTray::new().with_menu(tray_menu);
-  system_tray
+  SystemTray::new().with_menu(tray_menu)
 }
