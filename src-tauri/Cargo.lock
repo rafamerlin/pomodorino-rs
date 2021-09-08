@@ -58,23 +58,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28ae2b3dec75a406790005a200b1bd89785afc02517a00ca99ecfe093ee9e6cf"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "crossbeam",
- "image",
- "imageproc",
- "rodio",
- "rusttype",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "timer",
-]
-
-[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2541,6 +2524,23 @@ dependencies = [
  "log",
  "wepoll-ffi",
  "winapi",
+]
+
+[[package]]
+name = "pomodorino-rs"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "crossbeam",
+ "image",
+ "imageproc",
+ "rodio",
+ "rusttype",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "timer",
 ]
 
 [[package]]

@@ -1,11 +1,11 @@
 [package]
-name = "app"
+name = "pomodorino-rs"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
-default-run = "app"
+description = "Pomodorino-rs"
+authors = ["Rafael Merlin"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/rafamerlin/pomodorino-rs"
+default-run = "pomodorino-rs"
 edition = "2018"
 build = "src/build.rs"
 
