@@ -4,8 +4,10 @@
 )]
 
 mod icongen;
+mod pomodoro;
 mod sound;
 
+use crate::pomodoro::{Pomodoro, PomodoroState};
 use crate::sound::Beep;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -20,68 +22,47 @@ trait ToMessage: Send {
   fn value(&self) -> Vec<u8>;
 }
 
-const DEFAULT_VALUE: f32 = 99999.0;
-const TIME_MULTIPLIER: f32 = 60.0;
-
 fn main() {
   let system_tray = generate_menu();
-
-  let pomodoro_time = Arc::new(Mutex::new(DEFAULT_VALUE));
   let (tx, rx) = crossbeam::channel::unbounded();
+  let pomodoro = Arc::new(Mutex::new(Pomodoro::new(tx)));
 
-  let p_time = pomodoro_time.clone();
-  thread::spawn(move || {
-    let beep = Beep::new();
+  let pomo = pomodoro.clone();
+  thread::spawn(move || loop {
+    let (tx_timer, rx_timer) = crossbeam::channel::unbounded();
+    let timer = timer::Timer::new();
+    let _guard = timer.schedule_with_delay(chrono::Duration::milliseconds(1000), move || {
+      let _ignored = tx_timer.send(());
+    });
+    rx_timer.recv().unwrap();
 
-    loop {
-      let (tx_timer, rx_timer) = crossbeam::channel::unbounded();
-      let timer = timer::Timer::new();
-      let _guard = timer.schedule_with_delay(chrono::Duration::milliseconds(1000), move || {
-        let _ignored = tx_timer.send(());
-      });
-      rx_timer.recv().unwrap();
-
-      {
-        let mut p_time = p_time.lock().unwrap();
-        if *p_time >= 0.0 && *p_time != DEFAULT_VALUE {
-          if *p_time % TIME_MULTIPLIER <= 0.0 {
-            let minutes = (*p_time / TIME_MULTIPLIER).ceil() as usize;
-            tx.send(minutes).unwrap();
-          }
-          if *p_time == 0.0 {
-            beep.play();
-          }
-          *p_time -= 1.0;
-        }
-      }
+    {
+      let mut pomo = pomo.lock().unwrap();
+      pomo.tick();
     }
   });
 
+  let pomo = pomodoro.clone();
+
   tauri::Builder::default()
     .system_tray(system_tray)
-    .on_system_tray_event(move |app, event| match event {
+    .on_system_tray_event(move |_app, event| match event {
       SystemTrayEvent::LeftClick { .. } => {
-        let mut p_time = pomodoro_time.lock().unwrap();
-        if *p_time < 0.00 {
-          *p_time = DEFAULT_VALUE;
-          let tray_handle = app.tray_handle();
-          tray_handle
-            .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
-            .unwrap();
-        }
+        let mut pomo = pomo.lock().unwrap();
+        pomo.clear();
       }
       SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
         "p25" => {
-          let mut p_time = pomodoro_time.lock().unwrap();
-          *p_time = 25.0 * TIME_MULTIPLIER;
+          let mut pomo = pomo.lock().unwrap();
+          pomo.start(25);
         }
         "p15" => {
-          let mut p_time = pomodoro_time.lock().unwrap();
-          *p_time = 15.0 * TIME_MULTIPLIER;
+          let mut pomo = pomo.lock().unwrap();
+          pomo.start(15);
         }
         "p5" => {
-          let mut p_time = pomodoro_time.lock().unwrap();
-          *p_time = 5.0 * TIME_MULTIPLIER;
+          let mut pomo = pomo.lock().unwrap();
+          pomo.start(5);
         }
         "quit" => {
           std::process::exit(0);
@@ -95,21 +76,32 @@ fn main() {
       tray_handle
         .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
         .unwrap();
-
       let icons = icongen::create_all_icons();
 
       let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
-        while let Ok(i) = rx.recv() {
-          if i == 99999 {
-            tray_handle
-              .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
-              .unwrap();
-          } else {
-            let selected_icon = &icons[i];
-            tray_handle
-              .set_icon(tauri::Icon::Raw(selected_icon.clone()))
-              .unwrap();
+        let beep = Beep::new();
+
+        while let Ok(pomo) = rx.recv() {
+          match pomo {
+            PomodoroState::Clear => {
+              tray_handle
+                .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
+                .unwrap();
+            }
+            PomodoroState::Running(_, m) => {
+              let selected_icon = &icons[m];
+              tray_handle
+                .set_icon(tauri::Icon::Raw(selected_icon.clone()))
+                .unwrap();
+            }
+            PomodoroState::Completed => {
+              beep.play();
+              println!("Beep played");
+              tray_handle
+                .set_icon(tauri::Icon::Raw(icongen::YOMATO_IMAGE.to_vec()))
+                .unwrap();
+            }
           }
         }
       });
@@ -121,17 +113,19 @@ fn main() {
 }
 
 fn generate_menu() -> SystemTray {
-  let quit = CustomMenuItem::new("quit".to_string(), "Quit");
   let p25 = CustomMenuItem::new("p25".to_string(), "25");
   let p15 = CustomMenuItem::new("p15".to_string(), "15");
   let p5 = CustomMenuItem::new("p5".to_string(), "5");
+  let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+  let cancel = CustomMenuItem::new("cancel".to_string(), "Cancel");
   let tray_menu = SystemTrayMenu::new()
     .add_item(p25)
     .add_item(p15)
     .add_item(p5)
     .add_native_item(SystemTrayMenuItem::Separator)
-    .add_item(quit)
-    .add_native_item(SystemTrayMenuItem::Separator);
+    .add_item(cancel)
+    .add_native_item(SystemTrayMenuItem::Separator)
+    .add_item(quit);
 
   SystemTray::new().with_menu(tray_menu)
 }
