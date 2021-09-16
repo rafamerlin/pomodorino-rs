@@ -28,6 +28,11 @@ impl Pomodoro {
     self
   }
 
+  pub fn cancel(&mut self) -> () {
+    self.state = PomodoroState::Clear;
+    self.tx.send(self.state.clone()).unwrap();
+  }
+
   pub fn clear(&mut self) -> () {
     if let PomodoroState::Completed = self.state {
       self.state = PomodoroState::Clear;

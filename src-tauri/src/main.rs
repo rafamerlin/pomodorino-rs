@@ -64,6 +64,10 @@ fn main() {
           let mut pomo = pomo.lock().unwrap();
           pomo.start(5);
         }
+        "cancel" => {
+          let mut pomo = pomo.lock().unwrap();
+          pomo.cancel();
+        }
         "quit" => {
           std::process::exit(0);
         }
