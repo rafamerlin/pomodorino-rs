@@ -11,7 +11,12 @@ use crate::pomodoro::{Pomodoro, PomodoroState};
 use crate::sound::Beep;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::{
+  CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+  SystemTraySubmenu,
+};
+
+const INFO: &'static str = "info";
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -93,18 +98,25 @@ fn main() {
                 .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
                 .unwrap();
             }
-            PomodoroState::Running(_, m) => {
+            PomodoroState::Running(_, m, info) => {
               let selected_icon = &icons[m];
               tray_handle
                 .set_icon(tauri::Icon::Raw(selected_icon.clone()))
                 .unwrap();
+              if let Some(info) = info {
+                let item_handle = tray_handle.get_item(INFO);
+                item_handle.set_title(info).unwrap();
+              }
             }
-            PomodoroState::Completed => {
+            PomodoroState::Completed(info) => {
               beep.play();
-              println!("Beep played");
               tray_handle
                 .set_icon(tauri::Icon::Raw(icongen::YOMATO_IMAGE.to_vec()))
                 .unwrap();
+              if let Some(info) = info {
+                let item_handle = tray_handle.get_item(INFO);
+                item_handle.set_title(info).unwrap();
+              }
             }
           }
         }
@@ -117,12 +129,15 @@ fn main() {
 }
 
 fn generate_menu() -> SystemTray {
+  let info = CustomMenuItem::new(INFO.to_string(), "Pomodorino").disabled();
   let p25 = CustomMenuItem::new("p25".to_string(), "25");
   let p15 = CustomMenuItem::new("p15".to_string(), "15");
   let p5 = CustomMenuItem::new("p5".to_string(), "5");
   let quit = CustomMenuItem::new("quit".to_string(), "Quit");
   let cancel = CustomMenuItem::new("cancel".to_string(), "Cancel");
   let tray_menu = SystemTrayMenu::new()
+    .add_item(info)
+    .add_native_item(SystemTrayMenuItem::Separator)
     .add_item(p25)
     .add_item(p15)
     .add_item(p5)
