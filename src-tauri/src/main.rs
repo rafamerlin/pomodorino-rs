@@ -12,8 +12,7 @@ use crate::sound::Beep;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::{
-  CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
-  SystemTraySubmenu,
+  CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem
 };
 
 const INFO: &'static str = "info";
@@ -31,6 +30,10 @@ fn main() {
   let system_tray = generate_menu();
   let (tx, rx) = crossbeam::channel::unbounded();
   let pomodoro = Arc::new(Mutex::new(Pomodoro::new(tx)));
+
+  // TODO: Use this to create Linux's icons.
+  // let path = std::env::current_dir().unwrap();
+  // println!("The current directory is {}", path.display());
 
   let pomo = pomodoro.clone();
   thread::spawn(move || loop {
@@ -89,8 +92,6 @@ fn main() {
 
       let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
-        let beep = Beep::new();
-
         while let Ok(pomo) = rx.recv() {
           match pomo {
             PomodoroState::Clear => {
@@ -109,7 +110,6 @@ fn main() {
               }
             }
             PomodoroState::Completed(info) => {
-              beep.play();
               tray_handle
                 .set_icon(tauri::Icon::Raw(icongen::YOMATO_IMAGE.to_vec()))
                 .unwrap();
@@ -117,6 +117,7 @@ fn main() {
                 let item_handle = tray_handle.get_item(INFO);
                 item_handle.set_title(info).unwrap();
               }
+              Beep::new().play();
             }
           }
         }

@@ -9,10 +9,11 @@ pub enum PomodoroState {
 
 enum InfoState {
   Running(usize),
-  Completed,
+  Completed(usize),
 }
 
 pub struct Pomodoro {
+  original_duration: usize,
   state: PomodoroState,
   tx: Sender<PomodoroState>,
 }
@@ -22,6 +23,7 @@ const TIME_MULTIPLIER: f32 = 60.0;
 impl Pomodoro {
   pub fn new(tx: Sender<PomodoroState>) -> Self {
     Self {
+      original_duration: 0,
       state: PomodoroState::Clear,
       tx,
     }
@@ -29,6 +31,7 @@ impl Pomodoro {
 
   pub fn start(&mut self, length: usize) -> &mut Pomodoro {
     const FORCE_MINUTE_UPDATE: usize = 9999;
+    self.original_duration = length;
     self.state = PomodoroState::Running(
       length as f32 * TIME_MULTIPLIER + 1.0,
       FORCE_MINUTE_UPDATE,
@@ -54,7 +57,9 @@ impl Pomodoro {
       let new_t = t - 1.00;
       let m = *m;
       if new_t == 0.00 {
-        self.state = PomodoroState::Completed(Some(Pomodoro::generate_info(InfoState::Completed)));
+        self.state = PomodoroState::Completed(Some(Pomodoro::generate_info(InfoState::Completed(
+          self.original_duration,
+        ))));
         self.tx.send(self.state.clone()).unwrap();
       } else {
         let minutes = if new_t % TIME_MULTIPLIER <= 0.0 {
@@ -81,7 +86,7 @@ impl Pomodoro {
     let current_time = chrono::offset::Local::now().format("%H:%M:%S");
     let response = match state {
       InfoState::Running(len) => format!("{} Pomo Started at {}", len, current_time),
-      InfoState::Completed => format!("Pomo Finished at {}", current_time),
+      InfoState::Completed(len) => format!("{} Pomo Finished at {}", len, current_time),
     };
 
     response
