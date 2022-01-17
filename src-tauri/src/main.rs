@@ -9,11 +9,10 @@ mod sound;
 
 use crate::pomodoro::{Pomodoro, PomodoroState};
 use crate::sound::Beep;
+use icongen::PomodoroIcon;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use tauri::{
-  CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem
-};
+use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 
 const INFO: &'static str = "info";
 
@@ -85,34 +84,26 @@ fn main() {
     })
     .setup(move |app| {
       let tray_handle = app.tray_handle();
-      tray_handle
-        .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
-        .unwrap();
       let icons = icongen::create_all_icons();
+      set_tray_icon(&tray_handle, &icons.tomato);
 
       let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
         while let Ok(pomo) = rx.recv() {
           match pomo {
             PomodoroState::Clear => {
-              tray_handle
-                .set_icon(tauri::Icon::Raw(icongen::TOMATO_IMAGE.to_vec()))
-                .unwrap();
+              set_tray_icon(&tray_handle, &icons.tomato);
             }
             PomodoroState::Running(_, m, info) => {
-              let selected_icon = &icons[m];
-              tray_handle
-                .set_icon(tauri::Icon::Raw(selected_icon.clone()))
-                .unwrap();
+              let selected_icon = &icons.icons[m-1];
+              set_tray_icon(&tray_handle, selected_icon);
               if let Some(info) = info {
                 let item_handle = tray_handle.get_item(INFO);
                 item_handle.set_title(info).unwrap();
               }
             }
             PomodoroState::Completed(info) => {
-              tray_handle
-                .set_icon(tauri::Icon::Raw(icongen::YOMATO_IMAGE.to_vec()))
-                .unwrap();
+              set_tray_icon(&tray_handle, &icons.yomato);
               if let Some(info) = info {
                 let item_handle = tray_handle.get_item(INFO);
                 item_handle.set_title(info).unwrap();
@@ -127,6 +118,20 @@ fn main() {
     })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
+}
+
+#[cfg(not(target_os = "linux"))]
+fn set_tray_icon(tray_handle: &tauri::SystemTrayHandle, pomo_icon: &PomodoroIcon) {
+  tray_handle
+    .set_icon(tauri::Icon::Raw(pomo_icon.icon))
+    .unwrap();
+}
+
+#[cfg(target_os = "linux")]
+fn set_tray_icon(tray_handle: &tauri::SystemTrayHandle, pomo_icon: &PomodoroIcon) {
+  tray_handle
+    .set_icon(tauri::Icon::File(pomo_icon.icon.clone()))
+    .unwrap();
 }
 
 fn generate_menu() -> SystemTray {

@@ -1,21 +1,92 @@
+use std::{env, path::PathBuf};
+
 use image::{ImageFormat, Rgba};
 use imageproc::drawing::draw_text_mut;
 use rusttype::{Font, Scale};
 
-pub const TOMATO_IMAGE: &[u8] = include_bytes!("../icons/tomato.ico");
-pub const YOMATO_IMAGE: &[u8] = include_bytes!("../icons/yomato.ico");
+const TOMATO_IMAGE: &[u8] = include_bytes!("../icons/tomato.ico");
+const YOMATO_IMAGE: &[u8] = include_bytes!("../icons/yomato.ico");
 const FONT: &[u8] = include_bytes!("../resources/DejaVuSansMono-Bold.ttf");
 
-pub fn create_all_icons() -> Vec<Vec<u8>> {
-  let mut icons = vec![YOMATO_IMAGE.to_vec()];
+#[derive(Debug)]
+pub struct PomodoroIcons {
+  pub tomato: PomodoroIcon,
+  pub yomato: PomodoroIcon,
+  pub icons: Vec<PomodoroIcon>,
+}
+
+#[derive(Debug)]
+pub struct PomodoroIcon {
+  #[cfg(target_os = "linux")]
+  pub icon: PathBuf,
+  #[cfg(not(target_os = "linux"))]
+  pub icon: Vec<u8>,
+}
+
+#[cfg(target_os = "linux")]
+pub fn create_all_icons() -> PomodoroIcons {
+  let mut icons = vec![];
   for i in 1..26 {
     icons.push(create_icon(i));
   }
 
-  icons
+  PomodoroIcons {
+    icons,
+    tomato: create_base_icons(BaseIcons::Tomato),
+    yomato: create_base_icons(BaseIcons::Yomato),
+  }
 }
 
-fn create_icon(value: usize) -> Vec<u8> {
+#[cfg(not(target_os = "linux"))]
+pub fn create_all_icons() -> PomodoroIcons {
+  let mut icons = vec![];
+  for i in 1..26 {
+    icons.push(create_icon(i));
+  }
+
+  PomodoroIcons {
+    icons,
+    tomato: TOMATO_IMAGE,
+    yomato: YOMATO_IMAGE,
+  }
+}
+
+pub enum BaseIcons {
+  Tomato,
+  Yomato,
+}
+
+impl std::fmt::Display for BaseIcons {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      BaseIcons::Tomato => write!(f, "tomato"),
+      BaseIcons::Yomato => write!(f, "yomato"),
+    }
+  }
+}
+
+fn create_base_icons(icon: BaseIcons) -> PomodoroIcon {
+  let icon_to_create = match icon {
+    BaseIcons::Tomato => TOMATO_IMAGE,
+    BaseIcons::Yomato => YOMATO_IMAGE,
+  };
+
+  let image = image::load_from_memory_with_format(icon_to_create, ImageFormat::Ico)
+    .expect("Couldn't load image");
+
+  let path = env::current_dir().unwrap();
+  let path = path.join(format!("{}.ico", &icon));
+
+  println!("Path to save image {:?}", path);
+
+  let mut i = Vec::new();
+  image.write_to(&mut i, ImageFormat::Ico).unwrap();
+  image.save(&path).unwrap();
+
+  PomodoroIcon { icon: path }
+}
+
+fn create_icon(value: usize) -> PomodoroIcon {
   let font = Font::try_from_bytes(FONT).expect("Couldn't load font");
   let mut image = image::load_from_memory_with_format(TOMATO_IMAGE, ImageFormat::Ico)
     .expect("Couldn't load image");
@@ -38,8 +109,50 @@ fn create_icon(value: usize) -> Vec<u8> {
     &value.to_string(),
   );
 
-  let mut i = Vec::new();
-  image.write_to(&mut i, ImageFormat::Ico).unwrap();
+  #[cfg(not(target_os = "linux"))]
+  {
+    let mut i = Vec::new();
+    image.write_to(&mut i, ImageFormat::Ico).unwrap();
 
-  i
+    PomodoroIcon { icon: i }
+  }
+
+  #[cfg(target_os = "linux")]
+  {
+    let path = env::current_dir().unwrap();
+    let path = path.join(format!("{}.ico", &value));
+
+    println!("Path to save image {:?}", path);
+
+    let mut i = Vec::new();
+    image.write_to(&mut i, ImageFormat::Ico).unwrap();
+    image.save(&path).unwrap();
+
+    PomodoroIcon { icon: path }
+  }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn test_icon_generation_in_linux() {
+  //To run tests and get the printlns outputed
+  // cargo test -- --nocapture
+  let icons = create_all_icons();
+
+  println!("Icons {:?}", icons);
+
+  let tomato_path = icons.tomato.icon.to_string_lossy().to_string();
+  let extension = tomato_path[tomato_path.len()-3..].to_string();
+  
+  assert_eq!(icons.icons.len(), 25);
+  assert_eq!("ico", extension);
+}
+
+#[test]
+fn test_icon_type_enum_display() {
+  let to = format!("{}", BaseIcons::Tomato);
+  let yo = format!("{}", BaseIcons::Yomato);
+
+  assert_eq!("tomato", to);
+  assert_eq!("yomato", yo);
 }

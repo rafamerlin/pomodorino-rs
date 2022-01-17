@@ -46,6 +46,6 @@ impl Beep {
       .output_stream_handle
       .play_raw(self.sound.decoder().convert_samples())
       .unwrap();
-      std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(1));
   }
 }
