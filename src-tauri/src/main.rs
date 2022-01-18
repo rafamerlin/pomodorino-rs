@@ -95,7 +95,7 @@ fn main() {
               set_tray_icon(&tray_handle, &icons.tomato);
             }
             PomodoroState::Running(_, m, info) => {
-              let selected_icon = &icons.icons[m-1];
+              let selected_icon = &icons.icons[m - 1];
               set_tray_icon(&tray_handle, selected_icon);
               if let Some(info) = info {
                 let item_handle = tray_handle.get_item(INFO);
@@ -123,7 +123,7 @@ fn main() {
 #[cfg(not(target_os = "linux"))]
 fn set_tray_icon(tray_handle: &tauri::SystemTrayHandle, pomo_icon: &PomodoroIcon) {
   tray_handle
-    .set_icon(tauri::Icon::Raw(pomo_icon.icon))
+    .set_icon(tauri::Icon::Raw(pomo_icon.icon.clone()))
     .unwrap();
 }
 

@@ -1,3 +1,4 @@
+#[cfg(target_os = "linux")]
 use std::{env, path::PathBuf};
 
 use image::{ImageFormat, Rgba};
@@ -39,6 +40,13 @@ pub fn create_all_icons() -> PomodoroIcons {
 
 #[cfg(not(target_os = "linux"))]
 pub fn create_all_icons() -> PomodoroIcons {
+  let tomato = PomodoroIcon {
+    icon: TOMATO_IMAGE.to_vec(),
+  };
+  let yomato = PomodoroIcon {
+    icon: YOMATO_IMAGE.to_vec(),
+  };
+
   let mut icons = vec![];
   for i in 1..26 {
     icons.push(create_icon(i));
@@ -46,16 +54,18 @@ pub fn create_all_icons() -> PomodoroIcons {
 
   PomodoroIcons {
     icons,
-    tomato: TOMATO_IMAGE,
-    yomato: YOMATO_IMAGE,
+    tomato,
+    yomato,
   }
 }
 
+#[cfg(target_os = "linux")]
 pub enum BaseIcons {
   Tomato,
   Yomato,
 }
 
+#[cfg(target_os = "linux")]
 impl std::fmt::Display for BaseIcons {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
@@ -65,6 +75,7 @@ impl std::fmt::Display for BaseIcons {
   }
 }
 
+#[cfg(target_os = "linux")]
 fn create_base_icons(icon: BaseIcons) -> PomodoroIcon {
   let icon_to_create = match icon {
     BaseIcons::Tomato => TOMATO_IMAGE,
@@ -142,13 +153,14 @@ fn test_icon_generation_in_linux() {
   println!("Icons {:?}", icons);
 
   let tomato_path = icons.tomato.icon.to_string_lossy().to_string();
-  let extension = tomato_path[tomato_path.len()-3..].to_string();
-  
+  let extension = tomato_path[tomato_path.len() - 3..].to_string();
+
   assert_eq!(icons.icons.len(), 25);
   assert_eq!("ico", extension);
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_icon_type_enum_display() {
   let to = format!("{}", BaseIcons::Tomato);
   let yo = format!("{}", BaseIcons::Yomato);
