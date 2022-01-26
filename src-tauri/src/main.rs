@@ -30,10 +30,6 @@ fn main() {
   let (tx, rx) = crossbeam::channel::unbounded();
   let pomodoro = Arc::new(Mutex::new(Pomodoro::new(tx)));
 
-  // TODO: Use this to create Linux's icons.
-  // let path = std::env::current_dir().unwrap();
-  // println!("The current directory is {}", path.display());
-
   let pomo = pomodoro.clone();
   thread::spawn(move || loop {
     let (tx_timer, rx_timer) = crossbeam::channel::unbounded();
@@ -83,6 +79,11 @@ fn main() {
       _ => {}
     })
     .setup(move |app| {
+      
+      //hide from dock and menu bar on MacOS
+      #[cfg(target_os = "macos")]
+      app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
       let tray_handle = app.tray_handle();
       let icons = icongen::create_all_icons();
       set_tray_icon(&tray_handle, &icons.tomato);
