@@ -1,13 +1,16 @@
 Pomodorino
 ---
 
-Very simplistic pomodoro tray app.
+Very simplistic pomodoro tray app made using Rust and Tauri
 
 I recommend to check the technique in more details on the [official website](https://cirillocompany.de/pages/pomodoro-technique)
 
+Should be working on windows, linux and mac.
 
-*Currently this is only working/tested on windows.
+For Linux to work we need it to generate all the icons that will be used, so it will try to generate them on the same folder of the executable.
 
+I'm not generating any builds for this one. So I recommend checking this on how to generate your own installer:
+https://tauri.studio/docs/get-started/intro
 
 
 #### Credits:
