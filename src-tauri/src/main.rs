@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 
-const INFO: &'static str = "info";
+const INFO: &str = "info";
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -45,7 +45,7 @@ fn main() {
     }
   });
 
-  let pomo = pomodoro.clone();
+  let pomo = pomodoro;
 
   tauri::Builder::default()
     .system_tray(system_tray)
@@ -79,7 +79,6 @@ fn main() {
       _ => {}
     })
     .setup(move |app| {
-      
       //hide from dock and menu bar on MacOS
       #[cfg(target_os = "macos")]
       app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -88,7 +87,6 @@ fn main() {
       let icons = icongen::create_all_icons();
       set_tray_icon(&tray_handle, &icons.tomato);
 
-      let rx = rx.clone();
       tauri::async_runtime::spawn(async move {
         while let Ok(pomo) = rx.recv() {
           match pomo {
