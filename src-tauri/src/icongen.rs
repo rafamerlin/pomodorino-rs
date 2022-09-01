@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "linux"))]
 use std::io::Cursor;
 #[cfg(target_os = "linux")]
 use std::{env, path::PathBuf};
@@ -91,8 +92,6 @@ fn create_base_icons(icon: BaseIcons) -> PomodoroIcon {
 
   println!("Path to save image {:?}", path);
 
-  let mut i = Vec::new();
-  image.write_to(&mut i, ImageFormat::Ico).unwrap();
   image.save(&path).unwrap();
 
   PomodoroIcon { icon: path }
@@ -137,9 +136,6 @@ fn create_icon(value: usize) -> PomodoroIcon {
     let path = path.join(format!("{}.ico", &value));
 
     println!("Path to save image {:?}", path);
-
-    let mut i = Vec::new();
-    image.write_to(&mut i, ImageFormat::Ico).unwrap();
     image.save(&path).unwrap();
 
     PomodoroIcon { icon: path }
