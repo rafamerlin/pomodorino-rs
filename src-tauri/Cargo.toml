@@ -1,6 +1,6 @@
 [package]
 name = "pomodorino-rs"
-version = "0.3.1"
+version = "0.3.2"
 description = "Pomodorino-rs"
 authors = ["Rafael Merlin"]
 license = "MIT OR Apache-2.0"
@@ -17,7 +17,7 @@ tauri-build = { version = "1.0.0", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.0.0", features = ["api-all", "icon-ico", "system-tray"] }
+tauri = { version = "1.0.0", features = ["icon-ico", "system-tray"] }
 crossbeam = "0.8.1"
 
 image = { version = "0.24.1", default-features = false, features = ["ico"] }
