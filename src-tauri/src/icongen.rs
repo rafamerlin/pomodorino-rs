@@ -90,9 +90,10 @@ fn create_base_icons(icon: BaseIcons) -> PomodoroIcon {
   let path = env::current_dir().unwrap();
   let path = path.join(format!("{}.ico", &icon));
 
-  println!("Path to save image {:?}", path);
-
-  image.save(&path).unwrap();
+  if !path.exists() {
+    println!("Path to save image {:?}", path);
+    image.save(&path).unwrap();
+  }
 
   PomodoroIcon { icon: path }
 }
@@ -135,8 +136,10 @@ fn create_icon(value: usize) -> PomodoroIcon {
     let path = env::current_dir().unwrap();
     let path = path.join(format!("{}.ico", &value));
 
-    println!("Path to save image {:?}", path);
-    image.save(&path).unwrap();
+    if !path.exists() {
+      println!("Path to save image {:?}", path);
+      image.save(&path).unwrap();
+    }
 
     PomodoroIcon { icon: path }
   }
