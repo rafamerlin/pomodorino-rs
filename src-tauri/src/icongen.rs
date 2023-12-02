@@ -1,11 +1,10 @@
-#[cfg(not(target_os = "linux"))]
-use std::io::Cursor;
-#[cfg(target_os = "linux")]
-use std::{env, path::PathBuf};
-
 use image::{ImageFormat, Rgba};
 use imageproc::drawing::draw_text_mut;
 use rusttype::{Font, Scale};
+#[cfg(not(target_os = "linux"))]
+use std::io::Cursor;
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
 
 const TOMATO_IMAGE: &[u8] = include_bytes!("../icons/tomato.ico");
 const YOMATO_IMAGE: &[u8] = include_bytes!("../icons/yomato.ico");
@@ -87,7 +86,7 @@ fn create_base_icons(icon: BaseIcons) -> PomodoroIcon {
   let image = image::load_from_memory_with_format(icon_to_create, ImageFormat::Ico)
     .expect("Couldn't load image");
 
-  let path = env::current_dir().unwrap();
+  let path = linux::prepare_tmp_path();
   let path = path.join(format!("{}.ico", &icon));
 
   if !path.exists() {
@@ -133,11 +132,10 @@ fn create_icon(value: usize) -> PomodoroIcon {
 
   #[cfg(target_os = "linux")]
   {
-    let path = env::current_dir().unwrap();
+    let path = linux::prepare_tmp_path();
     let path = path.join(format!("{}.ico", &value));
 
     if !path.exists() {
-      println!("Path to save image {:?}", path);
       image.save(&path).unwrap();
     }
 
@@ -146,27 +144,48 @@ fn create_icon(value: usize) -> PomodoroIcon {
 }
 
 #[cfg(target_os = "linux")]
-#[test]
-fn test_icon_generation_in_linux() {
-  //To run tests and get the printlns outputed
-  // cargo test -- --nocapture
-  let icons = create_all_icons();
+mod linux {
+  use std::{env, fs, path::PathBuf};
 
-  println!("Icons {:?}", icons);
+  pub fn prepare_tmp_path() -> PathBuf {
+    let mut path = env::temp_dir();
+    path.push("pomodorino");
 
-  let tomato_path = icons.tomato.icon.to_string_lossy().to_string();
-  let extension = tomato_path[tomato_path.len() - 3..].to_string();
+    if !path.exists() {
+      fs::create_dir_all(&path).unwrap();
+    }
 
-  assert_eq!(icons.icons.len(), 25);
-  assert_eq!("ico", extension);
+    path
+  }
 }
 
-#[test]
 #[cfg(target_os = "linux")]
-fn test_icon_type_enum_display() {
-  let to = format!("{}", BaseIcons::Tomato);
-  let yo = format!("{}", BaseIcons::Yomato);
+#[cfg(test)]
+mod test {
+  use super::*;
 
-  assert_eq!("tomato", to);
-  assert_eq!("yomato", yo);
+  #[test]
+  fn test_icon_generation_in_linux() {
+    //To run tests and get the printlns outputed
+    // cargo test -- --nocapture
+    let icons = create_all_icons();
+
+    println!("Icons {:?}", icons);
+
+    let tomato_path = icons.tomato.icon.to_string_lossy().to_string();
+    let extension = tomato_path[tomato_path.len() - 3..].to_string();
+
+    assert_eq!(icons.icons.len(), 25);
+    assert_eq!("ico", extension);
+  }
+
+  #[test]
+  #[cfg(target_os = "linux")]
+  fn test_icon_type_enum_display() {
+    let to = format!("{}", BaseIcons::Tomato);
+    let yo = format!("{}", BaseIcons::Yomato);
+
+    assert_eq!("tomato", to);
+    assert_eq!("yomato", yo);
+  }
 }

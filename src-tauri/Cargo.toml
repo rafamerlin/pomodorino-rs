@@ -1,6 +1,6 @@
 [package]
 name = "pomodorino-rs"
-version = "0.3.2"
+version = "0.3.4"
 description = "Pomodorino-rs"
 authors = ["Rafael Merlin"]
 license = "MIT OR Apache-2.0"
@@ -12,12 +12,12 @@ build = "src/build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.2.1", features = [] }
+tauri-build = { version = "1.5.0", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.2.4", features = ["icon-ico", "system-tray"] }
+tauri = { version = "1.5", features = ["icon-ico", "system-tray"] }
 crossbeam = "0.8.2"
 
 image = { version = "0.24.5", default-features = false, features = ["ico"] }
@@ -30,5 +30,7 @@ chrono = "0.4.23"
 rodio = {version = "0.17.1", features = ["symphonia-mp3"], default-features = false  }
 
 [features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
 default = [ "custom-protocol" ]
 custom-protocol = [ "tauri/custom-protocol" ]

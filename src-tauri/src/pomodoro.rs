@@ -84,11 +84,9 @@ impl Pomodoro {
 
   fn generate_info(state: InfoState) -> String {
     let current_time = chrono::offset::Local::now().format("%H:%M:%S");
-    let response = match state {
+    match state {
       InfoState::Running(len) => format!("{} Pomo Started at {}", len, current_time),
       InfoState::Completed(len) => format!("{} Pomo Finished at {}", len, current_time),
-    };
-
-    response
+    }
   }
 }

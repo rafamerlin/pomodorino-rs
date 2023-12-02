@@ -1,13 +1,13 @@
 {
   "name": "pomodorino-rs",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Pomodoro App made in Rust using Tauri",
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
-    "@tauri-apps/cli": "^1.2.3"
+    "@tauri-apps/cli": "^1.5.6"
   },
   "dependencies": {
-    "@tauri-apps/api": "^1.2.0"
+    "@tauri-apps/api": "^1.5.1"
   }
 }
