@@ -19,7 +19,6 @@
       "identifier": "pomodorino-rs",
       "icon": [
         "icons/icon.ico",
-        "icons/icon.png",
         "icons/icon.icns"
       ],
       "resources": [],
