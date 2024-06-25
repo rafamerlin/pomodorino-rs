@@ -1,6 +1,6 @@
 [package]
 name = "pomodorino-rs"
-version = "0.3.4"
+version = "0.3.5"
 description = "Pomodorino-rs"
 authors = ["Rafael Merlin"]
 license = "MIT OR Apache-2.0"

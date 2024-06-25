@@ -1,6 +1,6 @@
 {
   "name": "pomodorino-rs",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Pomodoro App made in Rust using Tauri",
   "main": "index.js",
   "license": "MIT",
